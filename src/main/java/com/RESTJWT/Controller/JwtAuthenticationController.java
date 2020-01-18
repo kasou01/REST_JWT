@@ -1,5 +1,10 @@
 package com.RESTJWT.Controller;
 
+import java.sql.Timestamp;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.Objects;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -32,7 +37,11 @@ public class JwtAuthenticationController {
         final UserDetails userDetails = userDetailsService
                 .loadUserByUsername(authenticationRequest.getUsername());
         final String token = jwtTokenUtil.generateToken(userDetails);
-        return ResponseEntity.ok(new JwtResponse(token));
+        Date expirationDateFromToken = jwtTokenUtil.getExpirationDateFromToken(token);
+        ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(expirationDateFromToken.toInstant(), ZoneId.of("Asia/Tokyo"));
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
+        String format = dateTimeFormatter.format(zonedDateTime);
+        return ResponseEntity.ok(new JwtResponse(token, format));
     }
     private void authenticate(String username, String password) throws Exception {
         try {
