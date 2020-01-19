@@ -1,7 +1,7 @@
 package com.RESTJWT.Controller;
 
 import com.RESTJWT.model.TradeResource;
-import com.RESTJWT.service.NodeRPCConnection;
+import com.RESTJWT.service.CordaRPCConnectionService;
 import com.google.common.collect.ImmutableList;
 import com.template.flows.InsertTradeStateFlow;
 import com.template.states.TradeState;
@@ -27,39 +27,15 @@ import java.util.stream.Collectors;
 @RestController
 public class HelloWorldController {
     @Autowired
-    NodeRPCConnection connection;
+    CordaRPCConnectionService cordaRPCConnectionService;
     @RequestMapping({ "/hello" })
     public String firstPage() {
         return "Hello World";
     }
-    @RequestMapping({ "/node" })
-    public String node() {
-        CordaRPCOps proxy = connection.proxy;
-        Instant instant = proxy.currentNodeTime();
-        TradeState s = new TradeState(null,
-                null,
-                System.currentTimeMillis(),
-                "A",
-                "B",
-                "ISSUE",
-                new Amount(100,"abc"),
-                "1"
-        );
-        TradeState s1 = new TradeState(null,
-                null,
-                System.currentTimeMillis(),
-                "A",
-                "B",
-                "ISSUE",
-                new Amount(100,"abc"),
-                "1"
-        );
-        proxy.startFlowDynamic(InsertTradeStateFlow.class, ImmutableList.of(s,s1));
-        return instant.toString();
-    }
+
     @RequestMapping({ "/get" })
     public List<TradeResource> getTrade() {
-        CordaRPCOps proxy = connection.proxy;
+        CordaRPCOps proxy = cordaRPCConnectionService.getProxy();
 
         Vault.Page<TradeState> tradeStatePage = proxy.vaultQuery(TradeState.class);
         List<StateAndRef<TradeState>> states = tradeStatePage.getStates();
@@ -70,7 +46,7 @@ public class HelloWorldController {
 
     @PostMapping({ "/insert" })
     public List<TradeResource> insert(@RequestBody List<TradeResource> data) {
-        CordaRPCOps proxy = connection.proxy;
+        CordaRPCOps proxy = cordaRPCConnectionService.getProxy();
         List<TradeState> nodeData = data.stream().map(d -> d.toTradeState()).collect(Collectors.toList());
         FlowHandle<Void> voidFlowHandle = proxy.startFlowDynamic(InsertTradeStateFlow.class, nodeData);
         StateMachineRunId id = voidFlowHandle.getId();
